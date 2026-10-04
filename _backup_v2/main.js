@@ -104,9 +104,7 @@
         });
     });
 
-    /* ─── Reveal on scroll (progressive enhancement) ───
-       We add .reveal-prep to <html> ONLY when JS is healthy and IntersectionObserver
-       exists. If anything fails, elements stay visible (no black gaps). */
+    /* ─── Reveal on scroll ─── */
     function initReveals() {
         const els = document.querySelectorAll('.reveal, .reveal-scale');
         if (reduceMotion || !('IntersectionObserver' in window)) {
@@ -114,7 +112,6 @@
             lightDashboards();
             return;
         }
-        document.documentElement.classList.add('reveal-prep');
         const io = new IntersectionObserver((entries, obs) => {
             entries.forEach(en => {
                 if (en.isIntersecting) {
@@ -270,97 +267,39 @@
         }, { passive: true });
     }
 
-    /* ─── Contact form ───
-       Primary: WhatsApp. Fallback: mailto (guarantees delivery even without WA). */
+    /* ─── Contact form → WhatsApp ─── */
     const form = document.getElementById('contactForm');
-    const PHONE_RE = /^(\+?970|\+?972|0)?(5[0-9]|4[0-9]|2[0-9]|8|9)[0-9]{7}$/;
-
-    function showMsg(el, text, ok) {
-        el.textContent = text;
-        el.className = 'form-msg ' + (ok ? 'form-msg-ok' : 'form-msg-err');
-    }
-
     if (form) {
-        const msg = form.querySelector('#formMsg');
-
         form.addEventListener('submit', e => {
             e.preventDefault();
-
             const btn = form.querySelector('button[type="submit"]');
-            const g = id => (form.querySelector('#' + id) || {}).value || '';
-            const phone = g('phone').replace(/[\s\-()]/g, '');
-
-            /* ── validation ── */
-            if (!g('name').trim() || !phone || !g('service')) {
-                showMsg(msg, '⚠️ ناقص معلومات أساسية: الاسم، رقم التواصل، والخدمة المطلوبة.', false);
-                return;
-            }
-            if (!PHONE_RE.test(phone)) {
-                showMsg(msg, '⚠️ رقم التواصل مو صحيح. مثال صحيح: 0591234567 أو +970599123456.', false);
-                form.querySelector('#phone').focus();
-                return;
-            }
-
             const original = btn.innerHTML;
             btn.innerHTML = '<span>جارٍ الإرسال...</span>';
             btn.disabled = true;
 
-            const body = 'مرحبا، أريد فحص ظهور نشاطي مجانًا\n\n'
-                + 'الاسم: ' + g('name') + '\n'
-                + 'اسم المنشأة: ' + g('business') + '\n'
-                + 'نوع النشاط: ' + g('type') + '\n'
-                + 'المطلوب: ' + g('service') + '\n'
-                + 'رقم التواصل: ' + g('phone') + '\n'
-                + (g('email') ? 'البريد: ' + g('email') + '\n' : '')
-                + (g('message') ? 'الرسالة: ' + g('message') + '\n' : '');
+            const g = id => (form.querySelector('#' + id) || {}).value || '';
+            let body = 'مرحبا، أريد حجز استشارة مجانية\n\n';
+            body += 'الاسم: ' + g('name') + '\n';
+            body += 'اسم المنشأة: ' + g('business') + '\n';
+            body += 'نوع النشاط: ' + g('type') + '\n';
+            body += 'المطلوب: ' + g('service') + '\n';
+            body += 'رقم التواصل: ' + g('phone') + '\n';
+            if (g('email')) body += 'البريد: ' + g('email') + '\n';
+            if (g('message')) body += 'الرسالة: ' + g('message') + '\n';
 
-            const waURL = 'https://wa.me/972592059611?text=' + encodeURIComponent(body);
-            const mailURL = 'mailto:hello@mihwar20.tech?subject='
-                + encodeURIComponent('طلب فحص مجاني - ' + g('name'))
-                + '&body=' + encodeURIComponent(body);
+            window.open('https://wa.me/972592059611?text=' + encodeURIComponent(body), '_blank');
 
-            /* Try WhatsApp first; user gets the prefilled chat.
-               mailto fires as a silent backup so the lead is never lost. */
-            window.open(waURL, '_blank');
-            setTimeout(() => { window.location.href = mailURL; }, 1200);
-
-            showMsg(msg, '✓ تم الإرسال! فتحنا لك واتساب لتأكيد الطلب — لو ما انفتش، راسلنا على hello@mihwar20.tech', true);
-
+            btn.innerHTML = '<span>تم فتح واتساب ✓</span>';
+            btn.style.background = '#25D366';
+            btn.style.color = '#000';
             setTimeout(() => {
                 btn.innerHTML = original;
+                btn.style.background = '';
+                btn.style.color = '';
                 btn.disabled = false;
                 form.reset();
-            }, 4000);
+            }, 3000);
         });
-    }
-
-    /* ─── Lightbox for result screenshots ─── */
-    const lb = document.getElementById('lightbox');
-    if (lb) {
-        const lbImg = document.getElementById('lightboxImg');
-        const lbCap = document.getElementById('lightboxCaption');
-        const lbClose = document.getElementById('lightboxClose');
-
-        function openLB(src, alt, cap) {
-            lbImg.src = src; lbImg.alt = alt || ''; lbCap.textContent = cap || '';
-            lb.classList.add('open');
-            document.body.style.overflow = 'hidden';
-        }
-        function closeLB() {
-            lb.classList.remove('open');
-            document.body.style.overflow = '';
-        }
-
-        document.querySelectorAll('.case-card-shot img').forEach(img => {
-            img.style.cursor = 'zoom-in';
-            img.addEventListener('click', () => {
-                const cap = img.closest('.case-card-shot').querySelector('.case-card-shot-label');
-                openLB(img.src, img.alt, cap ? cap.textContent : '');
-            });
-        });
-        lbClose.addEventListener('click', closeLB);
-        lb.addEventListener('click', e => { if (e.target === lb) closeLB(); });
-        document.addEventListener('keydown', e => { if (e.key === 'Escape' && lb.classList.contains('open')) closeLB(); });
     }
 
 })();
